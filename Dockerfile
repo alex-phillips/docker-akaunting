@@ -18,10 +18,13 @@ RUN \
  echo "**** install runtime packages ****" && \
  apk add --no-cache \
 	php7 \
+	php7-ctype \
 	php7-curl \
 	php7-dom \
+	php7-gd \
 	php7-pdo_mysql \
 	php7-tokenizer \
+	php7-xmlreader \
 	php7-zip && \
  echo "**** install akaunting ****" && \
  mkdir -p /app/akaunting && \
