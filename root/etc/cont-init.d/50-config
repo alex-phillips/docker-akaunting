@@ -1,67 +1,8 @@
 #!/usr/bin/with-contenv bash
 
-# set default values for variables
-declare -A AKAUNTING_CONF
-
-AKAUNTING_CONF[DB_CONNECTION]=${DB_CONNECTION:-mysql}
-AKAUNTING_CONF[DB_HOST]=${DB_HOST:-mariadb}
-AKAUNTING_CONF[DB_PORT]=${DB_PORT:-3306}
-AKAUNTING_CONF[DB_DATABASE]=${DB_DATABASE:-akaunting}
-AKAUNTING_CONF[DB_USERNAME]=${DB_USERNAME:-root}
-AKAUNTING_CONF[DB_PASSWORD]=${DB_PASSWORD:-}
-
-rm /app/akaunting/.env 2>/dev/null
-ln -s /config/.env /app/akaunting/.env
-
-# persist env variables
-FIRST_RUN="false"
-if [ ! -f "/config/.env" ]; then
-	FIRST_RUN="true"
-	touch /config/.env
-	# cp /defaults/env /config/.env
-	# # sed in values or skip if value not set
-	# for KEY in "${!AKAUNTING_CONF[@]}"; do \
-	# if [[ ${AKAUNTING_CONF[$KEY]} == "" ]]; then \
-	# :
-	# else sed -i 's|{{'$KEY'}}|'${AKAUNTING_CONF[$KEY]}'|g' /config/.env
-	# fi
-	# done
-
-	# /usr/bin/php /app/akaunting/artisan key:generate
-fi
-
-[[ ! -e "/config/storage" ]] && \
-	mv /app/akaunting/storage /config/
-
-rm -rf /app/akaunting/storage
-ln -s /config/storage /app/akaunting/storage
-
-cd /app/akaunting
-
-# check for the mysql endpoint for 30 seconds
-if [ -z ${DB_PORT+x} ]; then
-	DB_PORT=3306
-fi
-END=$((SECONDS+30))
-while [ ${SECONDS} -lt ${END} ]; do
-	/usr/bin/nc -z ${AKAUNTING_CONF[DB_HOST]} ${AKAUNTING_CONF[DB_PORT]} && \
-	if [ ! -z "$(/usr/bin/nc -w1 ${AKAUNTING_CONF[DB_HOST]} ${AKAUNTING_CONF[DB_PORT]})" ]; then
-		[ ! -z "${RUN}" ] && break
-		RUN="RAN"
-		# we sleep here again due to first run init on DB containers
-		[[ FIRST_RUN = "true" ]] && sleep 5
-	else
-		sleep 1
-	fi
-	sleep 1
-done
-
-/usr/bin/php artisan clear-compiled
-/usr/bin/php artisan optimize
+find /data -maxdepth 1 ! -name data -exec ln -sf '{}' /app/ \;
 
 # permissions
-chmod -R 775 \
-	/config/storage
 chown -R abc:abc \
-	/app/akaunting \
-	/config
+	/config \
+	/app/peqphpeditor

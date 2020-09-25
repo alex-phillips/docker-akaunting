@@ -5,7 +5,7 @@ server {
 
     listen 443 ssl;
 
-    root /app/akaunting;
+    root /app/peqphpeditor;
     index index.php index.html index.htm;
 
     server_name _;

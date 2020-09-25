@@ -1,49 +1,50 @@
-FROM lsiobase/nginx:3.9
+FROM lsiobase/alpine:3.11
 
 # set version label
 ARG BUILD_DATE
 ARG VERSION
-ARG AKAUNTING_RELEASE
+ARG SERVER_RELEASE
 LABEL build_version="Linuxserver.io version:- ${VERSION} Build-date:- ${BUILD_DATE}"
 LABEL maintainer="alex-phillips"
 
 RUN \
  echo "**** install build packages ****" && \
  apk add --no-cache --virtual=build-dependencies \
-	composer \
-	curl \
-	git \
-	nodejs \
-	npm && \
+	curl && \
  echo "**** install runtime packages ****" && \
  apk add --no-cache \
-	php7 \
-	php7-ctype \
-	php7-curl \
-	php7-dom \
-	php7-gd \
-	php7-pdo_mysql \
-	php7-tokenizer \
-	php7-xmlreader \
-	php7-zip && \
- echo "**** install akaunting ****" && \
- mkdir -p /app/akaunting && \
- if [ -z ${akaunting_RELEASE+x} ]; then \
-	akaunting_RELEASE=$(curl -sX GET "https://api.github.com/repos/akaunting/akaunting/releases/latest" \
-	| awk '/tag_name/{print $4;exit}' FS='[""]'); \
+	nodejs \
+	npm && \
+ echo "**** install server ****" && \
+ mkdir -p /app/server && \
+ if [ -z ${SERVER_RELEASE+x} ]; then \
+	SERVER_RELEASE=$(curl -sX GET "https://api.github.com/repos/Akkadius/eqemu-web-admin/commits/master" \
+	| awk '/sha/{print $4;exit}' FS='[""]'); \
  fi && \
  curl -o \
- /tmp/akaunting.tar.gz -L \
-	"https://github.com/akaunting/akaunting/archive/${akaunting_RELEASE}.tar.gz" && \
+ 	/tmp/server.tar.gz -L \
+	"https://github.com/Akkadius/eqemu-web-admin/archive/${SERVER_RELEASE}.tar.gz" && \
  tar xf \
- /tmp/akaunting.tar.gz -C \
-	/app/akaunting/ --strip-components=1 && \
- echo "**** install composer packages ****" && \
- cd /app/akaunting && \
- composer install \
-	--no-dev \
-	--no-suggest \
-	--no-interaction && \
+ 	/tmp/server.tar.gz -C \
+	/app/server/ --strip-components=1 && \
+ cd /app/server && \
+ npm install && \
+ echo "**** install client ****" && \
+ mkdir -p /tmp/client && \
+ if [ -z ${CLIENT_RELEASE+x} ]; then \
+	CLIENT_RELEASE=$(curl -sX GET "https://api.github.com/repos/Akkadius/eqemu-web-admin-client/commits/master" \
+	| awk '/sha/{print $4;exit}' FS='[""]'); \
+ fi && \
+ curl -o \
+ 	/tmp/client.tar.gz -L \
+	"https://github.com/Akkadius/eqemu-web-admin-client/archive/${CLIENT_RELEASE}.tar.gz" && \
+ tar xf \
+ 	/tmp/client.tar.gz -C \
+	/tmp/client/ --strip-components=1 && \
+ cd /tmp/client && \
+ npm install && \
+ npm run build && \
+ mv /tmp/client/dist/* /app/server/public/ && \
  echo "**** cleanup ****" && \
  apk del --purge \
 	build-dependencies && \
